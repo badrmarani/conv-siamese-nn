@@ -28,7 +28,7 @@ fit, val = train_test_split(
 
 
 model = ConvSiameseNet()
-# model = nn.DataParallel(model)
+model = nn.DataParallel(model)
 model = model.to(device)
 model.apply(weight_init)
 
