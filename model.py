@@ -1,12 +1,13 @@
 import torch
 from torch import nn
-from torchvision.models import vgg16_bn
+from torchvision.models import alexnet
+torch.cuda.empty_cache()
 
 class ConvSiameseNet(nn.Module):
     def __init__(self) -> None:
         super(ConvSiameseNet, self).__init__()
 
-        self.encoder = vgg16_bn(progress=False)
+        self.encoder = alexnet(progress=False)
         self.encoder.features[0] = nn.Conv2d(
             1, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
         )

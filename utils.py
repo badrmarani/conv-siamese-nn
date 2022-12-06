@@ -39,9 +39,9 @@ def train_test_split(dataset, train_size):
 
     return (
         DataLoader(
-            dataset, batch_size=args["batch_size_per_ep"], sampler=train_sampler),
+            dataset, batch_size=args["batch_size_per_ep"], sampler=train_sampler, num_workers=8),
         DataLoader(
-            dataset, batch_size=args["batch_size_per_ev"], sampler=test_sampler),
+            dataset, batch_size=args["batch_size_per_ev"], sampler=test_sampler, num_workers=8),
     )
 
 class LogoDataset(Dataset):
@@ -81,7 +81,7 @@ class LogoDataset(Dataset):
         if self.transform is not None:
             self.transform = transforms.Compose(
                 [
-                    transforms.Resize((400, 400)),
+                    transforms.Resize((200, 200)),
                     transforms.ToTensor(),
                     transforms.Normalize((0.0,), (1.0,)),
                 ]
