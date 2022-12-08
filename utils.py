@@ -16,7 +16,7 @@ dtype = torch.float
 with open("args.json", "r") as f:
     args = json.load(f)
 
-def plot_images(x1, x2, yhat, ytrue, epoch=0):
+def plot_images(x1, x2, distance, ytrue, epoch=0):
     fig, axes = plt.subplots(3, 3)
 
     for i, ax in enumerate(axes.flat):
@@ -25,9 +25,7 @@ def plot_images(x1, x2, yhat, ytrue, epoch=0):
             interpolation="spline16",
         )
 
-        pred = np.where(yhat>.5, 1, 0)
-        xlabel = f"ground truth {ytrue[i]}; prediction {pred[i]}\nprobability {yhat[i]}"
-
+        xlabel = f"ground truth {ytrue[i]}; distance {distance[i]}"
         ax.set_xlabel(xlabel)
         ax.set_xticks([])
         ax.set_yticks([])
@@ -38,89 +36,75 @@ def plot_images(x1, x2, yhat, ytrue, epoch=0):
 def predict(epoch, model, device, nsamples):
     pass
 
-def train(epoch, model, data_loader, optimizer, device):
+def train(epoch, model, loss_fn, data_loader, optimizer, device):
     model.train()
-    loss_fn = nn.BCELoss()
     train_loss = 0.0
     correct = 0.0
 
-    for batch, (x1, x2, y) in enumerate(data_loader):
-
-        print(x1.size(), x2.size(), y.size())
-        print(x1[0].eq(x1[1]).all())
-        print(x1[0].eq(x1[2]).all())
-        print(
-            "111", 100 * (y == 1).sum() / 14,
-            "000", 100 * (y == 0).sum() / 14,
-        )
-        
+    for batch, (x1, x2, y) in enumerate(data_loader, 0):
         x1, x2, y = x1.to(device), x2.to(device), y.to(device)
+
+        out1, out2 = model(x1, x2)
+        distance = nn.functional.pairwise_distance(out1, out2)
+
         optimizer.zero_grad()
-        yhat = model(x1, x2).squeeze(1)
-        loss = loss_fn(yhat, y)
+
+        loss = loss_fn(distance, y).unsqueeze(0)
         loss.backward()
         optimizer.step()
-
         with torch.no_grad():
             train_loss += loss.item()
-            pred = torch.where(yhat > 0.5, 1, 0)
-            correct += pred.eq(y.view_as(pred)).sum().item()
 
-    train_loss = train_loss / len(data_loader.dataset)
-    accuracy = correct / len(data_loader.dataset)
+    train_loss /= len(data_loader)
+
     print(
         f"train epoch {epoch}/{args['num_epochs']} ",
-        # f"batch {batch+1}/{len(data_loader.dataset)} ",
         f"loss {train_loss:.5f} ",
-        f"acc {accuracy:.5f} ",
     )
 
-    return loss.item(), accuracy
+    return train_loss
 
-def test(model, data_loader, device):
+def test(model, loss_fn, data_loader, device):
     model.eval()
-    loss_fn = nn.BCELoss()
     test_loss = 0.0 
     correct = 0.0
+    for batch, (x1, x2, y) in enumerate(data_loader, 0):
+        x1, x2, y = x1.to(device), x2.to(device), y.to(device)
+            
 
-    with torch.no_grad():
-        for batch, (x1, x2, y) in enumerate(data_loader):
-            x1, x2, y = x1.to(device), x2.to(device), y.to(device)
-            yhat = model(x1, x2).squeeze(1)
-            test_loss += loss_fn(yhat, y).item()
-            pred = torch.where(yhat > 0.5, 1, 0)
-            correct += pred.eq(y.view_as(pred)).sum().item()
-    
+        with torch.no_grad():
+            out1, out2 = model(x1, x2)
+            distance = nn.functional.pairwise_distance(out1, out2)
+            loss = loss_fn(distance, y).unsqueeze(0)
+            test_loss += loss.item()
 
-    test_loss = test_loss / len(data_loader.dataset)
-    accuracy = correct / len(data_loader.dataset)
+    test_loss /= len(data_loader)
 
     print(
         f"eval ",
         f"loss {test_loss:.5f} ",
-        f"acc {accuracy:.5f}",
     )
     
-    return test_loss, accuracy
+    return test_loss
 
 def train_test_split(dataset, train_size, shuffle=False):
-    dataset_size = len(dataset)
-    indices = list(range(dataset_size))
-    split = int(math.floor(train_size*len(dataset)))
+    # dataset_size = len(dataset)
+    # indices = list(range(dataset_size))
+    # split = int(math.floor(train_size*len(dataset)))
 
-    if shuffle:
-        np.random.shuffle(indices)
+    # if shuffle:
+    #     np.random.shuffle(indices)
 
-    train_sampler, test_sampler = (
-        SubsetRandomSampler(indices[:split]),
-        SubsetRandomSampler(indices[split:]),
-    )
+    # train_sampler, test_sampler = (
+    #     SubsetRandomSampler(indices[:split]),
+    #     SubsetRandomSampler(indices[split:]),
+    # )
 
     return (
         DataLoader(
-            dataset, batch_size=args["batch_size"], num_workers=0, sampler=train_sampler),
+            dataset, batch_size=args["batch_size"], num_workers=0),
         DataLoader(
-            dataset, batch_size=args["batch_size"], num_workers=0, sampler=test_sampler),
+            dataset, batch_size=args["batch_size"], num_workers=0),
     )
 
 
@@ -177,8 +161,6 @@ class LogoDataset(Dataset):
                 self.memo[im_class_2][rnd_index]
             ][0]
             y = torch.tensor(0, dtype=dtype)
-
-        print(x1, x2, y)
 
         x1 = Image.open(x1).convert("RGBA").convert("L")
         x2 = Image.open(x2).convert("RGBA").convert("L")
