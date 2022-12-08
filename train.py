@@ -66,28 +66,30 @@ for epoch in range(1, args["num_epochs"]+1):
     train_loss = train(epoch, model, loss_fn, fit, optimizer, device)
     test_loss = test(model, loss_fn, val, device)
 
-    if show_sample:
+    loss_history["fit"].append(train_loss)
+    loss_history["val"].append(test_loss)
+    
+    if show_sample and not epoch%5:
         sample_loader = torch.utils.data.DataLoader(
             dataset, batch_size=9, shuffle=True,
             num_workers=0)
 
         data_iter = iter(sample_loader)
-        x1, x2, y = next(data_iter)
+        x1, x2, y = next(data_iter)        
+        x1, x2, y = x1.to(device), x2.to(device), y.to(device)
         out1, out2 = model(x1,x2)
         distance = nn.functional.pairwise_distance(out1, out2).detach().cpu().numpy()
         x1 = x1.cpu().numpy().transpose([0, 2, 3, 1])
         x2 = x2.cpu().numpy().transpose([0, 2, 3, 1])
         plot_images(x1, x2, distance, y, epoch)
 
-    loss_history["fit"].append(train_loss)
-    loss_history["val"].append(test_loss)
 
-    torch.save(
-        {
-            "loss_history": loss_history,
-            "acc_history": acc_history,
-            "model": model.state_dict(),
-            "optimizer": optimizer.state_dict(),
-        },
-        f"./checkpoints/checkpoint_{epoch}.pkl",
-    )
+        torch.save(
+            {
+                "loss_history": loss_history,
+                "acc_history": acc_history,
+                "model": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+            },
+            f"./checkpoints/checkpoint_{epoch}.pkl",
+        )

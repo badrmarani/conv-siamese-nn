@@ -2,4 +2,5 @@ __pycache__/
 checkpoints/
 results/
 dataset/
+logo2k-dataset/
 references/

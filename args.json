@@ -1,11 +1,11 @@
 {
-    "num_batch": 2,
-    "batch_size": 12,
-    "num_epochs": 10,
+    "num_batch": 50,
+    "batch_size": 100,
+    "num_epochs": 300,
     "use_pretrained_model": false,
     "warmup_start": false,
     "lr": 1e-4,
     "split_sizes": [0.9],
     "folder_dataset": "dataset/",
-    "model_path": "checkpoints/checkpoint_1.pkl"
+    "model_path": "checkpoints/checkpoint_35.pkl"
 }

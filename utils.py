@@ -23,6 +23,7 @@ def plot_images(x1, x2, distance, ytrue, epoch=0):
         ax.imshow(
             np.concatenate([x1[i,...],x2[i,...]], axis=1),
             interpolation="spline16",
+            cmap="gray",
         )
 
         xlabel = f"ground truth {ytrue[i]}; distance {distance[i]}"
@@ -45,7 +46,7 @@ def train(epoch, model, loss_fn, data_loader, optimizer, device):
         x1, x2, y = x1.to(device), x2.to(device), y.to(device)
 
         out1, out2 = model(x1, x2)
-        distance = nn.functional.pairwise_distance(out1, out2)
+        distance = nn.functional.pairwise_distance(out1, out2).to(device)
 
         optimizer.zero_grad()
 
@@ -67,14 +68,13 @@ def train(epoch, model, loss_fn, data_loader, optimizer, device):
 def test(model, loss_fn, data_loader, device):
     model.eval()
     test_loss = 0.0 
-    correct = 0.0
     for batch, (x1, x2, y) in enumerate(data_loader, 0):
         x1, x2, y = x1.to(device), x2.to(device), y.to(device)
             
 
         with torch.no_grad():
             out1, out2 = model(x1, x2)
-            distance = nn.functional.pairwise_distance(out1, out2)
+            distance = nn.functional.pairwise_distance(out1, out2).to(device)
             loss = loss_fn(distance, y).unsqueeze(0)
             test_loss += loss.item()
 
@@ -107,6 +107,14 @@ def train_test_split(dataset, train_size, shuffle=False):
             dataset, batch_size=args["batch_size"], num_workers=0),
     )
 
+def augment(dataset):
+    return transforms.Compose([
+        transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), scale=(0.8, 1.2), shear=0.2),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.ToTensor(),
+        transforms.Normalize((0.0,), (1.0)),
+        transforms.Resize((200,200)),
+    ])(dataset)
 
 class LogoDataset(Dataset):
     def __init__(
@@ -117,10 +125,18 @@ class LogoDataset(Dataset):
         self.num_labels = len(self.dataset.classes)
 
         self.transform = transforms.Compose([
+            transforms.RandomApply(nn.ModuleList([
+                # transforms.RandomHorizontalFlip(.5),
+                # transforms.RandomVerticalFlip(.5),
+                transforms.RandomInvert(.5),
+                transforms.RandomRotation(degrees=90)
+                # transforms.GaussianBlur(kernel_size=(3,3), sigma=.1)
+            ]), p=.5),
             transforms.ToTensor(),
             transforms.Normalize((0.0,), (1.0)),
             transforms.Resize((200,200)),
         ])
+
 
         arr = torch.tensor(self.dataset.targets)
         self.memo = {index: None for index in range(self.num_labels)}
