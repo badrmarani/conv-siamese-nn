@@ -45,6 +45,15 @@ def train(epoch, model, data_loader, optimizer, device):
     correct = 0.0
 
     for batch, (x1, x2, y) in enumerate(data_loader):
+
+        print(x1.size(), x2.size(), y.size())
+        print(x1[0].eq(x1[1]).all())
+        print(x1[0].eq(x1[2]).all())
+        print(
+            "111", 100 * (y == 1).sum() / 14,
+            "000", 100 * (y == 0).sum() / 14,
+        )
+        
         x1, x2, y = x1.to(device), x2.to(device), y.to(device)
         optimizer.zero_grad()
         yhat = model(x1, x2).squeeze(1)
@@ -119,13 +128,11 @@ class LogoDataset(Dataset):
     def __init__(
             self,
             folder_dataset: Path,
-            transform=None,
     ) -> None:
         self.dataset = ImageFolder(root=folder_dataset)
         self.num_labels = len(self.dataset.classes)
 
-        self.transform = transform
-        self.tr = transforms.Compose([
+        self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.0,), (1.0)),
             transforms.Resize((200,200)),
@@ -136,15 +143,13 @@ class LogoDataset(Dataset):
         for x in self.memo.keys():
             self.memo[x] = torch.where(arr == x)[0]
 
-
     def __len__(self) -> int:
         return len(self.dataset.imgs)
 
     def __getitem__(
-            self,
-            index: int,
+        self,
+        index: int,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-
         im_class = random.randint(0, self.num_labels-1)
 
         rnd_index_1  = random.randint(0, self.memo[im_class].size(0)-1)
@@ -173,11 +178,11 @@ class LogoDataset(Dataset):
             ][0]
             y = torch.tensor(0, dtype=dtype)
 
+        print(x1, x2, y)
+
         x1 = Image.open(x1).convert("RGBA").convert("L")
         x2 = Image.open(x2).convert("RGBA").convert("L")
 
-        if self.transform:
-            x1 = self.tr(x1).clone().float()
-            x2 = self.tr(x2).clone().float()
-
+        x1 = self.transform(x1).clone().float()
+        x2 = self.transform(x2).clone().float()
         return x1, x2, y

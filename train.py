@@ -31,9 +31,7 @@ if not os.path.exists("results"):
     os.makedirs("results/")
 
 # DATASET
-dataset = LogoDataset(
-    folder_dataset=args["folder_dataset"],
-    transform=True)
+dataset = LogoDataset(folder_dataset=args["folder_dataset"])
 
 fit, val = train_test_split(
     dataset,
@@ -58,12 +56,6 @@ optimizer = torch.optim.Adam(
 loss_history = {"fit": [], "val": []}
 acc_history = {"fit": [], "val": []}
 
-
-# print("global")
-# print(len(fit.dataset), len(fit), len(iter(fit)))
-# print(len(val.dataset), len(val), len(iter(fit)))
-
-# print(len(fit.dataset))
 
 show_sample = True
 

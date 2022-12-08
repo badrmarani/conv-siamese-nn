@@ -1,6 +1,4 @@
 {
-    "batch_size_per_ep": 6,
-    "batch_size_per_ev": 4,
     "batch_size": 30,
     "num_epochs": 10,
     "use_pretrained_model": false,
