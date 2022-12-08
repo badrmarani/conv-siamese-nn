@@ -1,11 +1,12 @@
 {
-    "batch_size_per_ep": 100,
-    "batch_size_per_ev": 3343,
-    "num_epochs": 50,
+    "batch_size_per_ep": 6,
+    "batch_size_per_ev": 4,
+    "batch_size": 30,
+    "num_epochs": 10,
     "use_pretrained_model": false,
     "warmup_start": false,
     "lr": 1e-4,
     "split_sizes": [0.6, 0.6],
-    "folder_dataset": "logo2k-dataset/",
+    "folder_dataset": "dataset/",
     "model_path": "checkpoints/checkpoint_1.pkl"
 }

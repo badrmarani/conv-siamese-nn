@@ -1,8 +1,8 @@
 from torch.utils.data import DataLoader
 from model import ConvSiameseNet
-from utils import weight_init, train_test_split, LogoDataset
+from utils import plot_images, train, test, train_test_split, LogoDataset
 from torch import nn
-from sklearn.metrics import accuracy_score
+# from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 import matplotlib
 import torch
@@ -37,103 +37,58 @@ dataset = LogoDataset(
 
 fit, val = train_test_split(
     dataset,
-    train_size=args["split_sizes"][0])
+    train_size=args["split_sizes"][0],
+    shuffle=True)
 
 model = ConvSiameseNet()
 # model = nn.DataParallel(model)
 model = model.to(device)
-model.apply(weight_init)
-
 
 if args["warmup_start"]:
     model = torch.load(checkpoints+".pkl", map_location=device)
 
 loss_fn = nn.BCELoss()
+
 optimizer = torch.optim.Adam(
     model.parameters(), lr=args["lr"], weight_decay=.1)
-scheduler = torch.optim.lr_scheduler.MultiplicativeLR(
-    optimizer, lr_lambda=lambda epoch: 0.99)
+
+# scheduler = torch.optim.lr_scheduler.MultiplicativeLR(
+#     optimizer, lr_lambda=lambda epoch: 0.99)
 
 loss_history = {"fit": [], "val": []}
 acc_history = {"fit": [], "val": []}
-for epoch in range(args["num_epochs"]):
 
-    model.train()
-    for batch, (x1, x2, y) in enumerate(fit):
-        x1, x2, y = x1.to(device), x2.to(device), y.to(device)
-        optimizer.zero_grad()
 
-        yhat = model(x1, x2)
-        loss = loss_fn(yhat, y)
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
+# print("global")
+# print(len(fit.dataset), len(fit), len(iter(fit)))
+# print(len(val.dataset), len(val), len(iter(fit)))
 
-        with torch.no_grad():
-            acc = accuracy_score(yhat.cpu().numpy() > .5, y.cpu().numpy())
-            if not batch%10:
-                print(
-                    "TRAIN ",
-                    f"epoch {epoch+1}/{args['num_epochs']} ",
-                    f"batch {batch+1}/{len(fit)} ",
-                    f"loss {loss.item():.4f} ",
-                    f"accuracy {acc:.4f}"
-                )
+# print(len(fit.dataset))
 
-            loss_history["fit"].append(loss.item())
-            acc_history["fit"].append(acc.item())
+show_sample = True
 
-    # model.eval()
-    # with torch.no_grad():
-    #     for batch, (x1, x2, y) in enumerate(val):
-    #         x1, x2, y = x1.to(device), x2.to(device), y.to(device)
-    #         yhat = model(x1, x2)
-    #         loss = loss_fn(yhat, y)
-    #         acc = accuracy_score(yhat.cpu().numpy() > 0.5, y.cpu().numpy())
-            
-    #         if not batch%10:
-    #             print(
-    #                 "EVAL ",
-    #                 f"epoch {epoch+1}/{args['num_epochs']} ",
-    #                 f"batch {batch+1}/{len(val)} ",
-    #                 f"loss {loss.item():.4f} ",
-    #                 f"accuracy {acc:.4f}"
-    #             )
+for epoch in range(1, args["num_epochs"]+1):
+    train_loss, train_acc = train(epoch, model, fit, optimizer, device)
+    test_loss, test_acc = test(model, val, device)
 
-    #         loss_history["val"].append(loss.item())
-    #         acc_history["val"].append(acc.item())
+    if show_sample:
+        sample_loader = torch.utils.data.DataLoader(
+            dataset, batch_size=9, shuffle=True,
+            num_workers=0)
 
-    with torch.no_grad():
-        nsamples = 5
-        test = DataLoader(dataset, batch_size=nsamples, num_workers=8)
-        data = iter(test)
-        x1, x2, y = next(data)
-        x1, x2, y = x1.to(device), x2.to(device), y.to(device)
-        yhat = model(x1, x2)
-        predictions = yhat.cpu().numpy() > 0.5
+        data_iter = iter(sample_loader)
+        x1, x2, y = next(data_iter)
+        yhat = model(x1,x2)
+        yhat = yhat.detach().numpy()
+        x1 = x1.numpy().transpose([0, 2, 3, 1])
+        x2 = x2.numpy().transpose([0, 2, 3, 1])
+        plot_images(x1, x2, yhat, y, epoch)
 
-        fig, axs = plt.subplots(2, nsamples)
-        for i in range(2):
-            for j in range(nsamples):
-                axs[i, j].set_xticklabels([])
-                axs[i, j].set_yticklabels([])
-                axs[i, j].set_aspect("equal")
+    loss_history["fit"].append(train_loss)
+    loss_history["val"].append(test_loss)
 
-                xx1 = x1[j].cpu().numpy().transpose(1, 2, 0)
-                a = y[j].item()
-                b = predictions[j].item()
-                p = yhat[j].float().item()
-
-                if i:
-                    axs[i, j].imshow(xx1, cmap="gray")
-                if not i:
-                    axs[i, j].set_title(
-                        f"G{a:.0f} P{b:.0f} - {'correct' if a==b else 'false'} - {p:.3f}")
-                    xx2 = x2[j].cpu().numpy().transpose(1, 2, 0)
-                    axs[i, j].imshow(xx2, cmap="gray")
-        plt.subplots_adjust(wspace=0, hspace=0)
-        plt.savefig(f"results/{epoch}_model_predictions.jpg", dpi=600)
-        plt.close()
+    loss_history["fit"].append(train_acc)
+    loss_history["val"].append(test_acc)
 
     torch.save(
         {

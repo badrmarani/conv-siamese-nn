@@ -13,14 +13,32 @@ class ConvSiameseNet(nn.Module):
         )
 
         self.fc = nn.Sequential(
-            nn.Linear(1000, 1),
+            nn.Dropout(.3),
+            nn.Linear(1, 202),
+            nn.ReLU(),
+            nn.Dropout(.3),
+            nn.Linear(202, 1),
             nn.Sigmoid(),
         )
 
+        # self.encoder.apply(self.weight_init)
+        # self.fc.apply(self.weight_init)
+
+    def weight_init(self, m):
+        if isinstance(m, nn.Conv2d):
+            torch.nn.init.normal_(m.weight, 0.0, 1e-2)
+
+        if isinstance(m, nn.Linear):
+            torch.nn.init.normal_(m.weight, 0.0, 2e-1)
+
+        if isinstance(m, (nn.Conv2d, nn.Linear)):
+            torch.nn.init.normal_(m.bias, 0.5, 1e-2)
+
     def forward(self, x1, x2):
         num_batchs = x1.size(0)
-        x1 = self.encoder(x1)
-        x2 = self.encoder(x2)
+        x1 = self.encoder(x1).view((num_batchs,-1))
+        x2 = self.encoder(x2).view((num_batchs,-1))
 
-        feature_vector = torch.abs(x1-x2)
+        feature_vector = torch.nn.functional.pairwise_distance(x1, x2, keepdim=True)
+        # print(feature_vector.size())
         return self.fc(feature_vector)
