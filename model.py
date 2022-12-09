@@ -54,7 +54,7 @@ class ConvSiameseNet(nn.Module):
             for p in self.encoder.parameters():
                 p.requires_grad = True
 
-        for p in self.encoder.classifier[-1].parameters():
+        for p in self.encoder.classifier[4:].parameters():
             p.requires_grad = True
 
         if add_layer:
