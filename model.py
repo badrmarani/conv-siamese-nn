@@ -1,43 +1,21 @@
 import torch
 from torch import nn
-from torchvision import models 
+from torchvision import models
+
 torch.cuda.empty_cache()
 
 dtype = torch.float
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class ContrastiveLoss(nn.Module):
-    def __init__(self,
-        margin:int=1,
-        reduce:str="mean",
-    ) -> None:
-        super().__init__()
-        if isinstance(margin, torch.Tensor):
-            self.margin = margin
-        else:
-            self.margin = torch.tensor([margin], dtype=dtype).to(device)
-
-        self.reduce = reduce
-
-    def forward(self, distance, y):
-        out = (1 - y) * distance.pow(2) + y * torch.clamp(self.margin - distance, min=0.0).pow(2)
-        
-        if self.reduce.lower() == "mean":
-            out = out.mean()
-        else:
-            raise NotImplemented
-        return .5 * out
-
 
 class ConvSiameseNet(nn.Module):
-    def __init__(self,
-        pretrained=True,
-        add_layer=False,
-    ) -> None:
+    def __init__(self, pretrained=True, add_layer=False,) -> None:
         super(ConvSiameseNet, self).__init__()
         self.add_layer = add_layer
         if pretrained:
-            self.encoder = models.alexnet(progress=False, weights=models.AlexNet_Weights.IMAGENET1K_V1)
+            self.encoder = models.alexnet(
+                progress=False, weights=models.AlexNet_Weights.IMAGENET1K_V1
+            )
         else:
             self.encoder = models.alexnet(progress=False)
 
@@ -79,11 +57,11 @@ class ConvSiameseNet(nn.Module):
 
     def forward(self, x1, x2):
         num_batchs = x1.size(0)
-        out1 = self.encoder(x1).view((num_batchs,-1))
-        out2 = self.encoder(x2).view((num_batchs,-1))
+        out1 = self.encoder(x1).view((num_batchs, -1))
+        out2 = self.encoder(x2).view((num_batchs, -1))
         if self.add_layer:
             # x1 <- (num_batchs, 1)
-            diff = torch.abs(out1-out2)
+            diff = torch.abs(out1 - out2)
             out = self.fc(diff)
             return out
         else:
