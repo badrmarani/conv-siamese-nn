@@ -3,4 +3,5 @@ checkpoints/
 results/
 dataset/
 logo2k-dataset/
+.temp/
 references/
