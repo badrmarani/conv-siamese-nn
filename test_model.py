@@ -23,8 +23,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 checkpoint_filename = args["checkpoint_filename"]
 checkpoint = torch.load(checkpoint_filename, map_location=device)
 
-model = ConvSiameseNet().to(device)
-model.load_state_dict(checkpoint["model"], strict=False)
+model = ConvSiameseNet(pretrained=False).to(device)
+# model.load_state_dict(checkpoint["model"], strict=False)
 
 new_size = (200,200)
 tr = transforms.Compose([
@@ -32,10 +32,10 @@ tr = transforms.Compose([
     transforms.Resize(new_size),
 ])
 
-x1_filename = "dataset/1/cute cat.jpg"
-x1 = Image.open(x1_filename)
-temp_x1 = x1.convert("L")
-temp_x1 = tr(temp_x1).unsqueeze(0)
+x1_filename = "test_im_gucci.png"
+x1 = Image.open(x1_filename).convert("RGB")
+temp_x1 = x1.copy().convert("L")
+temp_x1 = tr(temp_x1).unsqueeze(0).to(device)
 
 dataset = ImageFolder(args["dataset_dirname"])
 num_folders = len(dataset.classes)
@@ -47,9 +47,9 @@ memo = {index: None for index in range(num_folders)}
 for x in memo.keys():
     indice = random.choice(torch.where(arr==x)[0].cpu().numpy())
     x2 = dataset.imgs[indice][0]
-    x2 = Image.open(x2)
-    temp_x2 = x2.convert("L")
-    temp_x2 = tr(temp_x2).unsqueeze(0)
+    x2 = Image.open(x2).convert("RGB")
+    temp_x2 = x2.copy().convert("L")
+    temp_x2 = tr(temp_x2).unsqueeze(0).to(device)
     out1, out2 = model(temp_x1, temp_x2)
     distance = torch.norm(out1-out2)
 
@@ -65,7 +65,12 @@ best_label = args["classes"][best_label_indice]
 h, w = (num_folders+1)//2, 2
 fig, axes = plt.subplots(h, w)
 for i, (ax, m) in enumerate(zip(axes.flat, memo.values())):
-    x2 = plt.imread(dataset.imgs[m[0]][0])
+    x2 = Image.open(dataset.imgs[m[0]][0]).convert("RGB")
+    x2 = tr(x2)
+    x2 = x2.cpu().numpy().transpose(1, 2, 0)
+    x1 = tr(Image.open(x1_filename).convert("RGB"))
+    x1 = x1.cpu().numpy().transpose(1, 2, 0)
+    print(x1.shape, x2.shape)
     ax.imshow(
         np.concatenate([x1, x2], axis=1),
     )
