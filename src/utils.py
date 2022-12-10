@@ -9,12 +9,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import random
-import json
+import yaml
 import math
 
 dtype = torch.float
-with open("args.json", "r") as f:
-    args = json.load(f)
+with open("args.yml", "r") as f:
+    args = yaml.safe_load(f)
 
 
 def plot_images(x1, x2, distance, ytrue, epoch=0):
@@ -62,7 +62,8 @@ def train(epoch, model, loss_fn, data_loader, optimizer, device):
     train_loss /= len(data_loader)
 
     print(
-        f"train epoch {epoch}/{args['num_epochs']} ", f"loss {train_loss:.5f} ",
+        f"train epoch {epoch}/{args['num_epochs']} ",
+        f"loss {train_loss:.5f} ",
     )
 
     return train_loss
@@ -83,7 +84,8 @@ def test(model, loss_fn, data_loader, device):
     test_loss /= len(data_loader)
 
     print(
-        f"eval ", f"loss {test_loss:.5f} ",
+        f"eval ",
+        f"loss {test_loss:.5f} ",
     )
 
     return test_loss

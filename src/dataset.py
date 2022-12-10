@@ -11,7 +11,11 @@ dtype = torch.float
 
 
 class TLDataset(Dataset):
-    def __init__(self, folder_dataset: Path, augment: bool,) -> None:
+    def __init__(
+        self,
+        folder_dataset: Path,
+        augment: bool,
+    ) -> None:
         self.dataset = ImageFolder(root=folder_dataset)
         self.num_labels = len(self.dataset.classes)
 
@@ -62,13 +66,17 @@ class TLDataset(Dataset):
         return len(self.dataset.imgs)
 
     def __getitem__(
-        self, index: int,
+        self,
+        index: int,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         pass
 
 
 class LogoDataset(Dataset):
-    def __init__(self, folder_dataset: Path,) -> None:
+    def __init__(
+        self,
+        folder_dataset: Path,
+    ) -> None:
         self.dataset = ImageFolder(root=folder_dataset)
         self.num_labels = len(self.dataset.classes)
 
@@ -101,7 +109,8 @@ class LogoDataset(Dataset):
         return len(self.dataset.imgs)
 
     def __getitem__(
-        self, index: int,
+        self,
+        index: int,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         im_class = random.randint(0, self.num_labels - 1)
 

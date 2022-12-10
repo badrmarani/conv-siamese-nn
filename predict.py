@@ -1,6 +1,6 @@
-from utils import LogoDataset
+from src.utils import LogoDataset
 from torch.utils.data import DataLoader
-from model import ConvSiameseNet
+from src.model import ConvSiameseNet
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib
@@ -8,10 +8,7 @@ import torch
 import json
 import os
 
-font = {
-    "weight": "bold",
-    "size": 5
-}
+font = {"weight": "bold", "size": 5}
 
 matplotlib.rc("font", **font)
 

@@ -5,13 +5,16 @@ use_pretrained_model: False
 warmup_start: false
 lr: 1e-4
 split_sizes: 0.9
-dataset_dirname: "dataset/"
-checkpoint_filename: "checkpoint_0.pkl"
+dataset_dirname: "logo2k-dataset/"
+checkpoint_filename: "checkpoints/checkpoint_18.pkl"
 classes:
   [
-    "addidas",
-    "nike",
-    "badr",
-    "me",
-    "meme",
+    "Addidas",
+    "Asus",
+    "Auchan",
+    "BMW",
+    "Gucci",
+    "Louis-vuitton",
+    "Nike",
+    "Phillips",
   ]

@@ -1,5 +1,4 @@
 import torch
-import yaml
 from torch import nn
 from torchvision import models
 
@@ -23,17 +22,17 @@ class L2Pool(nn.Module):
 
 class InceptionBlock(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            b33_rdc,
-            b33_out,
-            b55_rdc,
-            b55_out,
-            out_pool=None,
-            mode=None,
-            stride3=1,
-            stride5=1,
+        self,
+        in_channels,
+        out_channels,
+        b33_rdc,
+        b33_out,
+        b55_rdc,
+        b55_out,
+        out_pool=None,
+        mode=None,
+        stride3=1,
+        stride5=1,
     ) -> None:
         super(InceptionBlock, self).__init__()
 
@@ -106,8 +105,8 @@ class InceptionBlock(nn.Module):
 
 class InceptionNet(nn.Module):
     def __init__(
-            self,
-            in_channels: int = 3,
+        self,
+        in_channels: int = 3,
     ) -> None:
         super(InceptionNet, self).__init__()
 
@@ -148,9 +147,9 @@ class InceptionNet(nn.Module):
 
 class ConvSiameseNet(nn.Module):
     def __init__(
-            self,
-            pretrained=True,
-            add_layer=False,
+        self,
+        pretrained=True,
+        add_layer=False,
     ) -> None:
         super(ConvSiameseNet, self).__init__()
         self.add_layer = add_layer

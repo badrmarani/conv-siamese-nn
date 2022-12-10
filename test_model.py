@@ -1,6 +1,6 @@
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
-from model import ConvSiameseNet
+from src.model import ConvSiameseNet
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib
@@ -26,11 +26,13 @@ checkpoint = torch.load(checkpoint_filename, map_location=device)
 model = ConvSiameseNet(pretrained=False).to(device)
 # model.load_state_dict(checkpoint["model"], strict=False)
 
-new_size = (200,200)
-tr = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Resize(new_size),
-])
+new_size = (200, 200)
+tr = transforms.Compose(
+    [
+        transforms.ToTensor(),
+        transforms.Resize(new_size),
+    ]
+)
 
 x1_filename = "test_im_gucci.png"
 x1 = Image.open(x1_filename).convert("RGB")
@@ -45,13 +47,13 @@ arr = torch.tensor(dataset.targets)
 memo = {index: None for index in range(num_folders)}
 
 for x in memo.keys():
-    indice = random.choice(torch.where(arr==x)[0].cpu().numpy())
+    indice = random.choice(torch.where(arr == x)[0].cpu().numpy())
     x2 = dataset.imgs[indice][0]
     x2 = Image.open(x2).convert("RGB")
     temp_x2 = x2.copy().convert("L")
     temp_x2 = tr(temp_x2).unsqueeze(0).to(device)
     out1, out2 = model(temp_x1, temp_x2)
-    distance = torch.norm(out1-out2)
+    distance = torch.norm(out1 - out2)
 
     memo[x] = (indice, distance)
 
@@ -62,7 +64,7 @@ best_label_indice = dataset.imgs[best[0]][1]
 best_label = args["classes"][best_label_indice]
 
 
-h, w = (num_folders+1)//2, 2
+h, w = (num_folders + 1) // 2, 2
 fig, axes = plt.subplots(h, w)
 for i, (ax, m) in enumerate(zip(axes.flat, memo.values())):
     x2 = Image.open(dataset.imgs[m[0]][0]).convert("RGB")

@@ -1,15 +1,15 @@
 from torch.utils.data import DataLoader
 from torch import nn
-from model import ConvSiameseNet
-from loss import ContrastiveLoss, TripletLoss
-from dataset import CLDataset, TLDataset
-from utils import plot_images, train, test, train_test_split
+from src.model import ConvSiameseNet
+from src.loss import ContrastiveLoss, TripletLoss
+from src.dataset import CLDataset, TLDataset
+from src.utils import plot_images, train, test, train_test_split
 
 # from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 import matplotlib
 import torch
-import json
+import yaml
 import os
 
 torch.cuda.empty_cache()
@@ -18,8 +18,8 @@ font = {"weight": "bold", "size": 5}
 
 matplotlib.rc("font", **font)
 
-with open("args.json", "r") as f:
-    args = json.load(f)
+with open("args.yml", "r") as f:
+    args = yaml.safe_load(f)
 
 dtype = torch.float
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
