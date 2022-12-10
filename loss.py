@@ -18,17 +18,17 @@ class OnlineTripletLoss(nn.Module):
 
     def _euclidean_distance(self, x: torch.Tensor, eps: float = 1e-6):
         # x <- size(batch_size, )
-        x2 = torch.mm(x, x.T)       # size(num_batchs, num_batchs)
-        x2_norm = torch.diag(x2)    # size(num_batchs,)
+        x2 = torch.mm(x, x.T)  # size(num_batchs, num_batchs)
+        x2_norm = torch.diag(x2)  # size(num_batchs,)
 
         # size(num_batchs, num_batchs)
-        distance = x2_norm.unsqueeze(0) + x2_norm.unsqueeze(1) - 2*x2
+        distance = x2_norm.unsqueeze(0) + x2_norm.unsqueeze(1) - 2 * x2
         distance = torch.nn.functional.relu(distance)
 
         mask = (distance == 0.0).float()
-        distance += mask*eps
+        distance += mask * eps
         distance = torch.sqrt(distance)
-        distance *= (1.0-mask)
+        distance *= 1.0 - mask
         return distance
 
     def _get_valid_triplets(self, labels) -> torch.Tensor:
@@ -45,8 +45,9 @@ class OnlineTripletLoss(nn.Module):
         ij = not_same_indices.unsqueeze(2)
         ik = not_same_indices.unsqueeze(1)
         jk = not_same_indices.unsqueeze(0)
-        distinct_indices = torch.logical_and(jk, torch.logical_and(
-            ij, ik))  # size(num_batchs, num_batchs, num_batchs)
+        distinct_indices = torch.logical_and(
+            jk, torch.logical_and(ij, ik)
+        )  # size(num_batchs, num_batchs, num_batchs)
 
         same_labels = labels.unsqueeze(0) == labels.unsqueeze(1)
         ij = same_labels.unsqueeze(2)
