@@ -8,6 +8,20 @@ dtype = torch.float
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+class DummyNet(nn.Module):
+    def __init__(
+        self,
+        in_channels=3,
+    ) -> None:
+        super(DummyNet, self).__init__()
+        self.features = models.resnet18(progress=False)
+
+    def forward(self, x):
+        out = self.features(x).flatten(1)
+        out = nn.Sequential(nn.Linear(1000, 128), nn.Dropout(0.4))(out)
+        return out
+
+
 class L2Pool(nn.Module):
     """Taken from: https://discuss.pytorch.org/t/how-do-i-create-an-l2-pooling-2d-layer/105562/5"""
 
@@ -17,7 +31,7 @@ class L2Pool(nn.Module):
         self.pool = nn.AvgPool2d(*args, **kwargs)
 
     def forward(self, x):
-        return torch.sqrt(self.pool(x**2))
+        return torch.sqrt(self.pool(x**2 + 1e-16)) + 1e-16
 
 
 class InceptionBlock(nn.Module):
@@ -148,7 +162,8 @@ class InceptionNet(nn.Module):
 class ConvSiameseNet(nn.Module):
     def __init__(
         self,
-        pretrained=True,
+        pretrained=False,
+        freeze=False,
         add_layer=False,
     ) -> None:
         super(ConvSiameseNet, self).__init__()
@@ -157,24 +172,26 @@ class ConvSiameseNet(nn.Module):
             self.encoder = models.alexnet(
                 progress=False, weights=models.AlexNet_Weights.IMAGENET1K_V1
             )
+            self.encoder.features[0] = nn.Conv2d(
+                1, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+            )
+
+            if pretrained and freeze:
+                # freeze
+                for p in self.encoder.parameters():
+                    p.requires_grad = False
+                for p in self.encoder.classifier[4:].parameters():
+                    p.requires_grad = True
+            else:
+                # unfreeze
+                for p in self.encoder.parameters():
+                    p.requires_grad = True
         else:
             self.encoder = models.alexnet(progress=False)
 
-        self.encoder.features[0] = nn.Conv2d(
-            1, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
-        )
-
-        if pretrained:
-            # freeze
-            for p in self.encoder.parameters():
-                p.requires_grad = False
-        else:
-            # unfreeze
-            for p in self.encoder.parameters():
-                p.requires_grad = True
-
-        for p in self.encoder.classifier[4:].parameters():
-            p.requires_grad = True
+            self.encoder.features[0] = nn.Conv2d(
+                1, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+            )
 
         if add_layer:
             # if we use bceloss function

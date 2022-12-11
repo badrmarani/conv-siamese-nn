@@ -11,6 +11,9 @@ import torch
 import random
 import yaml
 import math
+import os
+
+num_workers = os.cpu_count()
 
 dtype = torch.float
 with open("args.yml", "r") as f:
@@ -91,20 +94,75 @@ def test(model, loss_fn, data_loader, device):
     return test_loss
 
 
-def train_test_split(dataset, train_size, shuffle=False):
-    # dataset_size = len(dataset)
-    # indices = list(range(dataset_size))
-    # split = int(math.floor(train_size*len(dataset)))
+def train_test_split(dataset, train_size, shuffle=True):
+    dataset_size = len(dataset)
+    indices = list(range(dataset_size))
+    split = int(math.floor(train_size * len(dataset)))
 
-    # if shuffle:
-    #     np.random.shuffle(indices)
+    if shuffle:
+        np.random.shuffle(indices)
 
-    # train_sampler, test_sampler = (
-    #     SubsetRandomSampler(indices[:split]),
-    #     SubsetRandomSampler(indices[split:]),
-    # )
+    train_sampler, test_sampler = (
+        SubsetRandomSampler(indices[:split]),
+        SubsetRandomSampler(indices[split:]),
+    )
 
     return (
-        DataLoader(dataset, batch_size=args["batch_size"], num_workers=0),
-        DataLoader(dataset, batch_size=args["batch_size"], num_workers=0),
+        DataLoader(
+            dataset, batch_size=args["batch_size"], num_workers=0, sampler=train_sampler
+        ),
+        DataLoader(
+            dataset, batch_size=args["batch_size"], num_workers=0, sampler=test_sampler
+        ),
     )
+
+
+def get_mean_std_dataset(dataset):
+    loader = DataLoader(
+        dataset,
+        batch_size=len(dataset),
+        shuffle=False,
+        # num_workers=num_workers,
+    )
+
+    images, _ = next(iter(loader))
+    print(images)
+    mean, std = images.mean([0, 2, 3]), images.std([0, 2, 3])
+    return mean, std
+
+
+class TripletLossTrainer:
+    def train(epoch, model, loss_fn, optim, dataloader, device):
+        model.train()
+        train_loss = 0.0
+        for batch, (x, labels) in enumerate(dataloader, start=1):
+            x, labels = x.to(device), labels.to(device)
+            embeddings = model(x)
+            loss = loss_fn(embeddings, labels)
+            train_loss += loss.item()
+
+            optim.zero_grad()
+            loss.backward()
+            optim.step()
+
+            print(
+                "<TRAIN> EPOCH: {:d} BATCH: {:d}/{} LOSS: {:>7f}".format(
+                    epoch, batch * len(x), len(dataloader.dataset), loss.item()
+                )
+            )
+        train_loss /= len(dataloader)
+        print("<TRAIN ERROR> EPOCH: {:d} AVG LOSS: {:>7f}".format(epoch, train_loss))
+        return train_loss
+
+    def test(epoch, model, loss_fn, dataloader, device):
+        model.eval()
+        loss = 0.0
+        with torch.no_grad():
+            for batch, (x, labels) in enumerate(dataloader, start=1):
+                x, labels = x.to(device), labels.to(device)
+                embeddings = model(x)
+                loss += loss_fn(embeddings, labels).item()
+
+        loss /= len(dataloader)
+        print("<TEST ERROR> EPOCH: {:d} AVG LOSS: {:>7f}".format(epoch, loss))
+        return loss
