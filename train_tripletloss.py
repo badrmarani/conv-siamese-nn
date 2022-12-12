@@ -16,13 +16,13 @@ with open("args.yml", "r") as f:
     args = yaml.safe_load(f)
 
 dtype = torch.float
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 
 checkpoints = "./checkpoints"
 if not os.path.exists(checkpoints):
     os.makedirs(checkpoints)
-if not os.path.exists("results"):
-    os.makedirs("results/")
+# if not os.path.exists("results"):
+#     os.makedirs("results/")
 
 # all_images = ImageFolder(args["dataset_dirname"])
 # mean, std = get_mean_std_dataset(all_images)
@@ -42,11 +42,11 @@ all_images = ImageFolder(args["dataset_dirname"], tr)
 trainloader, testloader = train_test_split(all_images, 0.8)
 # trainloader, testloader = random_split(all_images, [0.8, 0.2])
 
-num_epochs = 100
+num_epochs = 200
 
 model = DummyNet().to(device)
 loss_fn = OnlineTripletLossMining(bias=0.2)
-optim = torch.optim.Adam(model.parameters(), lr=0.005)
+optim = torch.optim.Adam(model.parameters(), lr=0.05)
 
 
 history = {"train": [], "test": []}
@@ -69,22 +69,23 @@ for epoch in range(1, num_epochs + 1):
             f="checkpoints/checkpoint_{}.pkl".format(epoch),
         )
 
-fig, axs = plt.subplots(1, 2, sharey=False)
-axs[0].set_title("All epochs")
+fig, axs = plt.subplots(1, 2, sharey=False, figsize=(10,5))
+# axs[0].set_title("All epochs")
 axs[0].plot(list(range(1, num_epochs + 1)), history["train"], label="Training loss")
 axs[0].plot(list(range(1, num_epochs + 1)), history["test"], label="Testing loss")
 axs[0].grid(True)
+axs[0].legend()
 
-axs[1].set_title("Last 10 epochs")
-axs[1].plot(list(range(1, num_epochs + 1))[10:], history["train"][10:], label="Training loss")
-axs[1].plot(list(range(1, num_epochs + 1))[10:], history["test"][10:], label="Testing loss")
+axs[1].set_title("Last 80 epochs")
+axs[1].plot(list(range(1, num_epochs + 1))[80:], history["train"][80:], label="Training loss")
+axs[1].plot(list(range(1, num_epochs + 1))[80:], history["test"][80:], label="Testing loss")
 axs[1].grid(True)
+axs[1].legend()
 
 fig.suptitle("Online Triplet Loss (Batch All Strategy)")
 fig.supxlabel("Loss")
 fig.supylabel("Loss")
-plt.legend()
 plt.tight_layout()
 plt.locator_params(axis="x", integer=True, tight=True)
-plt.savefig("history_{}_30.jpg".format(model.__class__.__name__), dpi=300)
+plt.savefig("history_{}_{}.jpg".format(model.__class__.__name__, num_epochs), dpi=300)
 # plt.close()
