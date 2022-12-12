@@ -11,14 +11,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class DummyNet(nn.Module):
     def __init__(
         self,
-        in_channels=3,
+        pretrained=False,
     ) -> None:
         super(DummyNet, self).__init__()
-        self.features = models.resnet18(progress=False)
+        self.features = models.resnet18(progress=False, weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        self.lin = nn.Sequential(nn.Linear(1000, 128), nn.Dropout(0.4))
 
     def forward(self, x):
         out = self.features(x).flatten(1)
-        out = nn.Sequential(nn.Linear(1000, 128), nn.Dropout(0.4))(out)
+        out = self.lin(out)
         return out
 
 

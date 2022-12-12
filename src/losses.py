@@ -55,13 +55,13 @@ class OnlineTripletLossMining(nn.Module):
         jk = not_same_indices.unsqueeze(0)
         distinct_indices = torch.logical_and(
             jk, torch.logical_and(ij, ik)
-        )  # size(num_batchs, num_batchs, num_batchs)
+        ).to(device)  # size(num_batchs, num_batchs, num_batchs)
 
         same_labels = labels.unsqueeze(0) == labels.unsqueeze(1)
         ij = same_labels.unsqueeze(2)
         ik = same_labels.unsqueeze(1)
         # size(num_batchs, num_batchs, num_batchs)
-        valid_indices = torch.logical_and(ij, torch.logical_not(ik))
+        valid_indices = torch.logical_and(ij, torch.logical_not(ik)).to(device)
 
         return torch.logical_and(distinct_indices, valid_indices)
 

@@ -16,7 +16,7 @@ with open("args.yml", "r") as f:
     args = yaml.safe_load(f)
 
 dtype = torch.float
-device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 checkpoints = "./checkpoints"
 if not os.path.exists(checkpoints):
@@ -42,11 +42,13 @@ all_images = ImageFolder(args["dataset_dirname"], tr)
 trainloader, testloader = train_test_split(all_images, 0.8)
 # trainloader, testloader = random_split(all_images, [0.8, 0.2])
 
-num_epochs = 200
+num_epochs = 500
 
-model = DummyNet().to(device)
+model = DummyNet()
+model = torch.nn.DataParallel(model)
+model = model.to(device)
 loss_fn = OnlineTripletLossMining(bias=0.2)
-optim = torch.optim.Adam(model.parameters(), lr=0.05)
+optim = torch.optim.Adam(model.parameters(), lr=0.005)
 
 
 history = {"train": [], "test": []}

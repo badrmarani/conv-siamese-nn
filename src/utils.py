@@ -154,14 +154,14 @@ class TripletLossTrainer:
         print("<TRAIN ERROR> EPOCH: {:d} AVG LOSS: {:>7f}".format(epoch, train_loss))
         return train_loss
 
+    @torch.no_grad()
     def test(epoch, model, loss_fn, dataloader, device):
         model.eval()
         loss = 0.0
-        with torch.no_grad():
-            for batch, (x, labels) in enumerate(dataloader, start=1):
-                x, labels = x.to(device), labels.to(device)
-                embeddings = model(x)
-                loss += loss_fn(embeddings, labels).item()
+        for batch, (x, labels) in enumerate(dataloader, start=1):
+            x, labels = x.to(device), labels.to(device)
+            embeddings = model(x)
+            loss += loss_fn(embeddings, labels).item()
 
         loss /= len(dataloader)
         print("<TEST ERROR> EPOCH: {:d} AVG LOSS: {:>7f}".format(epoch, loss))
