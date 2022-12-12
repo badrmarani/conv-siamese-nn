@@ -1,20 +1,9 @@
 num_batch: 50
-batch_size: 400
+batch_size: 300
 num_epochs: 300
 use_pretrained_model: False
 warmup_start: false
-lr: 1e-4
-split_sizes: 0.9
+lr: 0.005
+split_sizes: 0.8
 dataset_dirname: "dataset/"
-checkpoint_filename: "checkpoints/checkpoint_18.pkl"
-classes:
-  [
-    "Addidas",
-    "Asus",
-    "Auchan",
-    "BMW",
-    "Gucci",
-    "Louis-vuitton",
-    "Nike",
-    "Phillips",
-  ]
+checkpoint_filename: "checkpoints/checkpoint_500.pkl"
