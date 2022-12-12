@@ -18,3 +18,4 @@ for file in tqdm(zf.infolist(), ascii=True):
     zf.extract(file)
 
 os.remove(output_filename)
+os.rename("Logo-2K+/", "logo2k-dataset/")
