@@ -42,11 +42,11 @@ all_images = ImageFolder(args["dataset_dirname"], tr)
 trainloader, testloader = train_test_split(all_images, 0.8)
 # trainloader, testloader = random_split(all_images, [0.8, 0.2])
 
-num_epochs = 10
+num_epochs = 100
 
 model = DummyNet().to(device)
 loss_fn = OnlineTripletLossMining(bias=0.2)
-optim = torch.optim.Adam(model.parameters(), lr=1e-3)
+optim = torch.optim.Adam(model.parameters(), lr=0.005)
 
 
 history = {"train": [], "test": []}
@@ -59,27 +59,32 @@ for epoch in range(1, num_epochs + 1):
     history["train"].append(train_loss)
     history["test"].append(test_loss)
 
-    torch.save(
-        {
-            "loss_history": history,
-            "model": model.state_dict(),
-            "optim": optim.state_dict(),
-        },
-        f="checkpoints/checkpoint_{}.pkl".format(epoch),
-    )
+    if not epoch%10:
+        torch.save(
+            {
+                "loss_history": history,
+                "model": model.state_dict(),
+                "optim": optim.state_dict(),
+            },
+            f="checkpoints/checkpoint_{}.pkl".format(epoch),
+        )
 
+fig, axs = plt.subplots(1, 2, sharey=False)
+axs[0].set_title("All epochs")
+axs[0].plot(list(range(1, num_epochs + 1)), history["train"], label="Training loss")
+axs[0].plot(list(range(1, num_epochs + 1)), history["test"], label="Testing loss")
+axs[0].grid(True)
 
-# checkpoint = torch.load("checkpoints/checkpoint_2.pkl", map_location=device)
-# history = checkpoint["loss_history"]
-plt.figure()
-plt.plot(list(range(1, num_epochs + 1)), history["train"], label="Training loss")
-plt.plot(list(range(1, num_epochs + 1)), history["test"], label="Testing loss")
-plt.title("Online Triplet Loss (Batch All Strategy)")
-plt.xlabel("Epochs")
-plt.ylabel("Loss")
-plt.grid(True)
+axs[1].set_title("Last 10 epochs")
+axs[1].plot(list(range(1, num_epochs + 1))[10:], history["train"][10:], label="Training loss")
+axs[1].plot(list(range(1, num_epochs + 1))[10:], history["test"][10:], label="Testing loss")
+axs[1].grid(True)
+
+fig.suptitle("Online Triplet Loss (Batch All Strategy)")
+fig.supxlabel("Loss")
+fig.supylabel("Loss")
 plt.legend()
 plt.tight_layout()
 plt.locator_params(axis="x", integer=True, tight=True)
-plt.savefig("history_dummynet_tl.jpg", dpi=300)
-plt.close()
+plt.savefig("history_{}_30.jpg".format(model.__class__.__name__), dpi=300)
+# plt.close()
