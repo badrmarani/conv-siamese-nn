@@ -22,7 +22,8 @@ class OnlineTripletLossMining(nn.Module):
         self.eps = 1
 
     def _euclidean_distance(self, x: torch.Tensor, eps: float = 1e-16):
-        """Implementation of the 'Euclidean Distance Matrix Trick'
+        """Implementation of the `Euclidean Distance Matrix Trick`.
+
         Reference: https://www.robots.ox.ac.uk/~albanie/notes/Euclidean_distance_trick.pdf
         """
 

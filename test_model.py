@@ -1,6 +1,6 @@
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
-from src.model import ConvSiameseNet
+from src.models import ConvSiameseNet
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib
