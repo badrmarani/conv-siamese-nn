@@ -68,8 +68,8 @@ class OnlineTripletLossMining(nn.Module):
 
     def _get_ap_mask(self, labels):
         same_indices = torch.eye(labels.size(0), dtype=dtype).bool()
-        not_same_indices = torch.logical_not(same_indices)
-        same_labels = torch.logical_not(labels.unsqueeze(0) == labels.unsqueeze(1))
+        not_same_indices = torch.logical_not(same_indices).to(device)
+        same_labels = torch.logical_not(labels.unsqueeze(0) == labels.unsqueeze(1)).to(device)
         return torch.logical_and(same_labels, not_same_indices)
 
     def _get_an_mask(self, labels):
@@ -98,13 +98,28 @@ class OnlineTripletLossMining(nn.Module):
 
         distance = self._euclidean_distance(embeddings)
 
+        mask_ap = self._get_ap_mask(labels).float()
+        ap_dist = mask_ap * distance
+        hardest_positive_dist, _ = ap_dist.max(1, keepdim=True)
+
+        mask_an = self._get_an_mask(labels).float()
+        max_an_dist, _ = distance.max(1, keepdim=True)
+        an_dist = distance + max_an_dist * (1.0 - mask_an)
+
+        hardest_negative_dist, _ = an_dist.min(1, keepdim=True)
+
+        tl = hardest_positive_dist - hardest_negative_dist + self.bias
+        tl = torch.nn.functional.relu(tl)
+        triplet_loss = tl.mean()
+        return triplet_loss
+
     def forward(self, embeddings, labels, mode="all"):
         if mode.lower() == "all":
             loss = self._batch_all_triplet_loss(embeddings, labels)
         elif mode.lower() == "hard":
             loss = self._batch_hard_triplet_loss(embeddings, labels)
         else:
-            raise NotImplementedError
+            loss = self._batch_hard_triplet_loss(embeddings, labels)
 
         return loss
 

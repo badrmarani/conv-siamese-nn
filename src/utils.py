@@ -16,9 +16,14 @@ import os
 num_workers = os.cpu_count()
 
 dtype = torch.float
-with open("args.yml", "r") as f:
+with open("./args.yml", "r") as f:
     args = yaml.safe_load(f)
 
+
+def pil_loader(path):
+    with open(path, "rb") as f:
+        img = Image.open(f)
+        return img.convert("RGBA").convert("RGB")
 
 def plot_images(x1, x2, distance, ytrue, epoch=0):
     fig, axes = plt.subplots(3, 3)
@@ -109,10 +114,10 @@ def train_test_split(dataset, train_size, shuffle=True):
 
     return (
         DataLoader(
-            dataset, batch_size=args["batch_size"], num_workers=0, sampler=train_sampler
+            dataset, batch_size=args["batch_size"], num_workers=num_workers, sampler=train_sampler
         ),
         DataLoader(
-            dataset, batch_size=args["batch_size"], num_workers=0, sampler=test_sampler
+            dataset, batch_size=args["batch_size"], num_workers=num_workers, sampler=test_sampler
         ),
     )
 
@@ -138,7 +143,7 @@ class TripletLossTrainer:
         for batch, (x, labels) in enumerate(dataloader, start=1):
             x, labels = x.to(device), labels.to(device)
             embeddings = model(x)
-            loss = loss_fn(embeddings, labels)
+            loss = loss_fn(embeddings, labels, mode="hard")
             train_loss += loss.item()
 
             optim.zero_grad()
@@ -161,7 +166,7 @@ class TripletLossTrainer:
         for batch, (x, labels) in enumerate(dataloader, start=1):
             x, labels = x.to(device), labels.to(device)
             embeddings = model(x)
-            loss += loss_fn(embeddings, labels).item()
+            loss += loss_fn(embeddings, labels, mode="hard").item()
 
         loss /= len(dataloader)
         print("<TEST ERROR> EPOCH: {:d} AVG LOSS: {:>7f}".format(epoch, loss))
