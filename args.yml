@@ -1,8 +1,8 @@
-batch_size: 60
+batch_size: 999
 num_epochs: 2000
 warmup_start: False
 lr: 0.0005
 bias: 0.2
 split_size: 0.8
-dataset_dirname: "dataset2/"
+dataset_dirname: "dataset/"
 checkpoint_filename: "checkpoints/checkpoint_500.pkl"
