@@ -43,11 +43,10 @@ tr = transforms.Compose(
         transforms.ToTensor(),
         transforms.Resize((224, 224)),
         transforms.Grayscale(num_output_channels=3),
-        # transforms.Normalize((0.3944, 0.4048, 0.3899), (0.4443, 0.4412, 0.4408)),
         transforms.ColorJitter(),
         transforms.RandomInvert(0.5),
-        # transforms.RandomRotation((0, 180)),
         transforms.RandomAdjustSharpness(sharpness_factor=2),
+        # transforms.RandomRotation((0, 180)),
     ]
 )
 
@@ -64,7 +63,7 @@ num_epochs = args["num_epochs"]
 model = DummyNet(True)
 model = torch.nn.DataParallel(model)
 model = model.to(device)
-loss_fn = OnlineTripletLossMining(bias=args["bias"])
+loss_fn = OnlineTripletLossMining(bias=args["bias"], metric="cosine", mode="all")
 optim = torch.optim.Adam(model.parameters(), lr=args["lr"])
 
 if args["warmup_start"]:

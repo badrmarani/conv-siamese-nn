@@ -11,14 +11,21 @@ class OnlineTripletLossMining(nn.Module):
     2) https://towardsdatascience.com/triplet-loss-advanced-intro-49a07b7d8905
     """
 
-    def __init__(self, bias: float = 0.0, reduce: str = "sum") -> None:
+    def __init__(self, bias: float = 0.0, mode: str = "all", metric:str = "euclidean") -> None:
         super(OnlineTripletLossMining, self).__init__()
         if isinstance(bias, torch.Tensor):
             self.bias = bias
         else:
             self.bias = torch.tensor([bias], dtype=dtype).to(device)
 
-        self.reduce = reduce
+        if metric.lower() == "euclidean":
+            self.metric = self._euclidean_distance
+        elif metric.lower() == "cosine":
+            self.metric = self._cosine_distance
+        else:
+            raise NotImplementedError
+
+        self.mode = mode
         self.eps = 1
 
     def _euclidean_distance(self, x: torch.Tensor, eps: float = 1e-16):
@@ -27,7 +34,7 @@ class OnlineTripletLossMining(nn.Module):
         Reference: https://www.robots.ox.ac.uk/~albanie/notes/Euclidean_distance_trick.pdf
         """
 
-        # x <- size(batch_size, )
+        # x <- size(batch_size, embed_size)
         x2 = torch.matmul(x, x.T)  # size(num_batchs, num_batchs)
         x2_norm = torch.diag(x2)  # size(num_batchs,)
 
@@ -39,6 +46,11 @@ class OnlineTripletLossMining(nn.Module):
         distance = distance + mask * eps
         distance = torch.sqrt(distance + eps) * (1.0 - mask) + eps
         return distance
+
+    def _cosine_distance(self, x: torch.Tensor):
+        """copied from: https://github.com/pytorch/pytorch/issues/48306"""
+        return torch.nn.functional.cosine_similarity(x[:,:,None], x.t()[None,:,:])  
+
 
     def _get_valid_triplet_mask(self, labels) -> torch.Tensor:
         # generating the triplets using the online strategy.
@@ -78,7 +90,7 @@ class OnlineTripletLossMining(nn.Module):
 
     def _batch_all_triplet_loss(self, embeddings, labels):
         # here we chose all kinds of triplets
-        distance = self._euclidean_distance(embeddings)
+        distance = self.metric(embeddings)
         ap_dist = distance.unsqueeze(2)
         an_dist = distance.unsqueeze(1)
         loss = ap_dist - an_dist + self.bias
@@ -96,7 +108,7 @@ class OnlineTripletLossMining(nn.Module):
         # here we only chose hard triplets
         # embeddings <- size(num_batchs, embed_size)
 
-        distance = self._euclidean_distance(embeddings)
+        distance = self.metric(embeddings)
 
         mask_ap = self._get_ap_mask(labels).float()
         ap_dist = mask_ap * distance
@@ -113,13 +125,13 @@ class OnlineTripletLossMining(nn.Module):
         triplet_loss = tl.mean()
         return triplet_loss
 
-    def forward(self, embeddings, labels, mode="all"):
-        if mode.lower() == "all":
+    def forward(self, embeddings, labels):
+        if self.mode.lower() == "all":
             loss = self._batch_all_triplet_loss(embeddings, labels)
-        elif mode.lower() == "hard":
+        elif self.mode.lower() == "hard":
             loss = self._batch_hard_triplet_loss(embeddings, labels)
         else:
-            loss = self._batch_hard_triplet_loss(embeddings, labels)
+            raise NotImplementedError
 
         return loss
 
